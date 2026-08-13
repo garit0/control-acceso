@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>Control de acceso</title>
+
+  <script src="https://unpkg.com/html5-qrcode"
+          type="text/javascript">
+  </script>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      font-family: Arial, sans-serif;
+
+      background: #f4f6f8;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 500px;
+
+      background: white;
+
+      padding: 30px;
+
+      border-radius: 25px;
+
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.15);
+
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+
+      font-size: 30px;
+
+      color: #222;
+    }
+
+    .subtitulo {
+      margin-top: 10px;
+
+      color: #666;
+
+      font-size: 17px;
+    }
+
+    #reader {
+      width: 100%;
+
+      margin-top: 25px;
+
+      overflow: hidden;
+
+      border-radius: 15px;
+    }
+
+    #estado {
+      margin-top: 20px;
+
+      font-size: 17px;
+
+      color: #666;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <div class="card">
+
+    <h1>
+      🎟️ Control de acceso
+    </h1>
+
+    <div class="subtitulo">
+      Escanea el código QR del asistente
+    </div>
+
+    <div id="reader"></div>
+
+    <div id="estado">
+      📷 Preparando cámara...
+    </div>
+
+  </div>
+
+
+  <script>
+
+    const estado =
+      document.getElementById("estado");
+
+
+    function iniciarCamara() {
+
+      const scanner =
+        new Html5Qrcode("reader");
+
+
+      scanner.start(
+
+        {
+          facingMode: "environment"
+        },
+
+        {
+          fps: 10,
+
+          qrbox: {
+            width: 250,
+            height: 250
+          }
+
+        },
+
+        function(qrCodeMessage) {
+
+          console.log(
+            "QR detectado:",
+            qrCodeMessage
+          );
+
+          estado.textContent =
+            "✅ QR detectado";
+
+        },
+
+        function(errorMessage) {
+
+          // Ignoramos los errores normales
+          // mientras busca un QR.
+
+        }
+
+      )
+
+      .then(function() {
+
+        estado.textContent =
+          "📷 Cámara activa — esperando QR...";
+
+      })
+
+      .catch(function(error) {
+
+        console.error(error);
+
+        estado.textContent =
+          "❌ No se pudo acceder a la cámara: " +
+          error;
+
+      });
+
+    }
+
+
+    iniciarCamara();
+
+  </script>
+
+</body>
+
+</html>
