@@ -21,7 +21,9 @@
     }
 
     body {
+
       margin: 0;
+
       min-height: 100vh;
 
       font-family: Arial, sans-serif;
@@ -29,60 +31,132 @@
       background: #f4f6f8;
 
       display: flex;
+
       justify-content: center;
+
       align-items: center;
 
       padding: 20px;
+
     }
 
-    .card {
+    .contenedor {
+
       width: 100%;
+
       max-width: 500px;
 
       background: white;
 
       padding: 30px;
 
-      border-radius: 25px;
+      border-radius: 20px;
 
       box-shadow:
-        0 10px 30px rgba(0,0,0,0.15);
+        0 8px 25px rgba(0,0,0,0.12);
 
       text-align: center;
+
     }
 
     h1 {
-      margin: 0;
+
+      margin-top: 0;
 
       font-size: 30px;
 
-      color: #222;
     }
 
     .subtitulo {
-      margin-top: 10px;
 
       color: #666;
 
-      font-size: 17px;
+      margin-bottom: 25px;
+
     }
 
     #reader {
+
       width: 100%;
+
+    }
+
+    .resultado {
 
       margin-top: 25px;
 
-      overflow: hidden;
+      padding: 25px;
 
-      border-radius: 15px;
+      border-radius: 16px;
+
+      display: none;
+
     }
 
-    #estado {
+    .valido {
+
+      background: #e6f4ea;
+
+      color: #137333;
+
+    }
+
+    .utilizado {
+
+      background: #fef7e0;
+
+      color: #b06000;
+
+    }
+
+    .invalido {
+
+      background: #fce8e6;
+
+      color: #c5221f;
+
+    }
+
+    .icono {
+
+      font-size: 55px;
+
+      margin-bottom: 10px;
+
+    }
+
+    .estado {
+
+      font-size: 25px;
+
+      font-weight: bold;
+
+    }
+
+    .nombre {
+
+      font-size: 24px;
+
+      font-weight: bold;
+
+      margin-top: 10px;
+
+    }
+
+    .boton {
+
       margin-top: 20px;
 
-      font-size: 17px;
+      padding: 12px 20px;
 
-      color: #666;
+      border: none;
+
+      border-radius: 10px;
+
+      font-size: 16px;
+
+      cursor: pointer;
+
     }
 
   </style>
@@ -92,97 +166,360 @@
 
 <body>
 
-  <div class="card">
+  <div class="contenedor">
 
     <h1>
       🎟️ Control de acceso
     </h1>
 
-    <div class="subtitulo">
+    <p class="subtitulo">
       Escanea el código QR del asistente
-    </div>
+    </p>
+
 
     <div id="reader"></div>
 
-    <div id="estado">
-      📷 Preparando cámara...
+
+    <div id="resultado"
+         class="resultado">
+
+      <div id="icono"
+           class="icono">
+      </div>
+
+      <div id="estado"
+           class="estado">
+      </div>
+
+      <div id="nombre"
+           class="nombre">
+      </div>
+
+      <button
+        class="boton"
+        onclick="escanearOtraVez()">
+
+        📷 Escanear otro
+
+      </button>
+
     </div>
 
   </div>
 
 
-  <script>
+<script>
 
-    const estado =
-      document.getElementById("estado");
-
-
-    function iniciarCamara() {
-
-      const scanner =
-        new Html5Qrcode("reader");
+  const APPS_SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbwfP4EY0PputNtysEm91JtVX3riqeSX_pTD6lmrL_OiFsEDfO-TuMAPhi1-vorW-cI0UQ/exec";
 
 
-      scanner.start(
+  let scanner;
 
-        {
-          facingMode: "environment"
-        },
 
-        {
-          fps: 10,
+  function iniciarScanner() {
 
-          qrbox: {
-            width: 250,
-            height: 250
-          }
+    scanner =
+      new Html5Qrcode("reader");
 
-        },
 
-        function(qrCodeMessage) {
+    scanner.start(
 
-          console.log(
-            "QR detectado:",
-            qrCodeMessage
-          );
+      {
+        facingMode: "environment"
+      },
 
-          estado.textContent =
-            "✅ QR detectado";
+      {
+        fps: 10,
 
-        },
-
-        function(errorMessage) {
-
-          // Ignoramos los errores normales
-          // mientras busca un QR.
-
+        qrbox: {
+          width: 250,
+          height: 250
         }
 
-      )
+      },
 
-      .then(function() {
+      qrCodeMessage => {
 
-        estado.textContent =
-          "📷 Cámara activa — esperando QR...";
+        procesarQR(qrCodeMessage);
 
-      })
+      },
 
-      .catch(function(error) {
+      errorMessage => {
 
-        console.error(error);
+        // Ignoramos errores normales
+        // mientras busca el QR.
 
-        estado.textContent =
-          "❌ No se pudo acceder a la cámara: " +
-          error;
+      }
 
-      });
+    )
+
+    .catch(error => {
+
+      console.error(error);
+
+      mostrarResultado(
+
+        "invalido",
+
+        "❌",
+
+        "No se pudo acceder a la cámara",
+
+        ""
+
+      );
+
+    });
+
+  }
+
+
+  function procesarQR(qrCodeMessage) {
+
+    console.log(
+      "QR detectado:",
+      qrCodeMessage
+    );
+
+
+    // Detener cámara temporalmente
+
+    scanner.stop();
+
+
+    try {
+
+      const url =
+        new URL(qrCodeMessage);
+
+
+      const token =
+        url.searchParams.get("entrada");
+
+
+      if (!token) {
+
+        mostrarResultado(
+
+          "invalido",
+
+          "❌",
+
+          "QR inválido",
+
+          ""
+
+        );
+
+        return;
+
+      }
+
+
+      consultarAppsScript(token);
+
 
     }
 
+    catch(error) {
 
-    iniciarCamara();
+      console.error(error);
 
-  </script>
+      mostrarResultado(
+
+        "invalido",
+
+        "❌",
+
+        "QR inválido",
+
+        ""
+
+      );
+
+    }
+
+  }
+
+
+  function consultarAppsScript(token) {
+
+    const url =
+      APPS_SCRIPT_URL +
+      "?accion=validarEntrada&token=" +
+      encodeURIComponent(token);
+
+
+    console.log(
+      "Consultando:",
+      url
+    );
+
+
+    fetch(url)
+
+      .then(response => {
+
+        if (!response.ok) {
+
+          throw new Error(
+            "Error HTTP: " +
+            response.status
+          );
+
+        }
+
+        return response.json();
+
+      })
+
+      .then(resultado => {
+
+        console.log(
+          "Respuesta:",
+          resultado
+        );
+
+
+        if (
+          resultado.estado === "valido"
+        ) {
+
+          mostrarResultado(
+
+            "valido",
+
+            "🟢",
+
+            "ACCESO PERMITIDO",
+
+            resultado.nombre +
+            " " +
+            resultado.apellidos
+
+          );
+
+        }
+
+        else if (
+          resultado.estado === "utilizado"
+        ) {
+
+          mostrarResultado(
+
+            "utilizado",
+
+            "⚠️",
+
+            "ENTRADA YA UTILIZADA",
+
+            resultado.nombre +
+            " " +
+            resultado.apellidos
+
+          );
+
+        }
+
+        else {
+
+          mostrarResultado(
+
+            "invalido",
+
+            "❌",
+
+            "QR INVÁLIDO",
+
+            ""
+
+          );
+
+        }
+
+      })
+
+      .catch(error => {
+
+        console.error(error);
+
+        mostrarResultado(
+
+          "invalido",
+
+          "⚠️",
+
+          "ERROR DE CONEXIÓN",
+
+          ""
+
+        );
+
+      });
+
+  }
+
+
+  function mostrarResultado(
+    clase,
+    icono,
+    estado,
+    nombre
+  ) {
+
+    const resultado =
+      document.getElementById(
+        "resultado"
+      );
+
+
+    resultado.className =
+      "resultado " +
+      clase;
+
+
+    resultado.style.display =
+      "block";
+
+
+    document.getElementById(
+      "icono"
+    ).textContent =
+      icono;
+
+
+    document.getElementById(
+      "estado"
+    ).textContent =
+      estado;
+
+
+    document.getElementById(
+      "nombre"
+    ).textContent =
+      nombre;
+
+  }
+
+
+  function escanearOtraVez() {
+
+    document.getElementById(
+      "resultado"
+    ).style.display =
+      "none";
+
+
+    iniciarScanner();
+
+  }
+
+
+  iniciarScanner();
+
+</script>
+
 
 </body>
 
