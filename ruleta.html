@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>🎰 Gran Rifa</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+
+      margin: 0;
+
+      min-height: 100vh;
+
+      font-family: Arial, sans-serif;
+
+      background: #f4f6f8;
+
+      display: flex;
+
+      justify-content: center;
+
+      align-items: center;
+
+    }
+
+
+    .contenedor {
+
+      width: 90%;
+
+      max-width: 1000px;
+
+      text-align: center;
+
+    }
+
+
+    h1 {
+
+      font-size: 60px;
+
+      margin: 0 0 10px;
+
+      color: #222;
+
+    }
+
+
+    .subtitulo {
+
+      font-size: 24px;
+
+      color: #666;
+
+      margin-bottom: 40px;
+
+    }
+
+
+    .ruleta {
+
+      background: white;
+
+      border-radius: 30px;
+
+      padding: 60px 40px;
+
+      box-shadow:
+        0 15px 40px rgba(0,0,0,0.15);
+
+    }
+
+
+    #nombre {
+
+      font-size: 55px;
+
+      font-weight: bold;
+
+      min-height: 80px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      color: #222;
+
+    }
+
+
+    #estado {
+
+      margin-top: 25px;
+
+      font-size: 25px;
+
+      color: #666;
+
+    }
+
+
+    button {
+
+      margin-top: 40px;
+
+      padding: 20px 50px;
+
+      font-size: 28px;
+
+      font-weight: bold;
+
+      border: none;
+
+      border-radius: 50px;
+
+      cursor: pointer;
+
+      background: #222;
+
+      color: white;
+
+    }
+
+
+    button:disabled {
+
+      opacity: 0.5;
+
+      cursor: not-allowed;
+
+    }
+
+
+    #ganador {
+
+      display: none;
+
+      margin-top: 35px;
+
+    }
+
+
+    #ganador h2 {
+
+      font-size: 35px;
+
+      margin: 0 0 10px;
+
+    }
+
+
+    #ganadorNombre {
+
+      font-size: 50px;
+
+      font-weight: bold;
+
+    }
+
+
+    .contador {
+
+      margin-top: 25px;
+
+      font-size: 22px;
+
+      color: #666;
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <div class="contenedor">
+
+
+    <h1>
+      🎉 GRAN RIFA 🎉
+    </h1>
+
+
+    <div class="subtitulo">
+
+      ¡Mucha suerte a todos! 🍀
+
+    </div>
+
+
+    <div class="ruleta">
+
+
+      <div id="nombre">
+
+        Cargando participantes...
+
+      </div>
+
+
+      <div id="estado">
+
+        Preparando la ruleta...
+
+      </div>
+
+
+      <button
+        id="botonGirar"
+        onclick="girar()"
+        disabled>
+
+        🎰 GIRAR
+
+      </button>
+
+
+      <div class="contador">
+
+        Participantes disponibles:
+        <strong id="contador">0</strong>
+
+      </div>
+
+
+      <div id="ganador">
+
+        <h2>
+          🏆 ¡GANADOR! 🏆
+        </h2>
+
+        <div id="ganadorNombre"></div>
+
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<script>
+
+
+  const API_URL =
+    "https://script.google.com/macros/s/AKfycbwfP4EY0PputNtysEm91JtVX3riqeSX_pTD6lmrL_OiFsEDfO-TuMAPhi1-vorW-cI0UQ/exec";
+
+
+  let participantes = [];
+
+  let girando = false;
+
+
+  // --------------------------------
+  // Cargar participantes
+  // --------------------------------
+
+  async function cargarParticipantes() {
+
+    try {
+
+      const respuesta =
+        await fetch(
+          API_URL + "?api=ruleta"
+        );
+
+      participantes =
+        await respuesta.json();
+
+
+      actualizarInterfaz();
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      document.getElementById(
+        "nombre"
+      ).textContent =
+        "❌ Error al cargar participantes";
+
+    }
+
+  }
+
+
+  // --------------------------------
+  // Actualizar interfaz
+  // --------------------------------
+
+  function actualizarInterfaz() {
+
+    document.getElementById(
+      "contador"
+    ).textContent =
+      participantes.length;
+
+
+    if (
+      participantes.length === 0
+    ) {
+
+      document.getElementById(
+        "nombre"
+      ).textContent =
+        "No hay participantes";
+
+      document.getElementById(
+        "estado"
+      ).textContent =
+        "Todos han ganado o todavía no han ingresado.";
+
+      document.getElementById(
+        "botonGirar"
+      ).disabled = true;
+
+      return;
+
+    }
+
+
+    document.getElementById(
+      "nombre"
+    ).textContent =
+      "¿Quién será el ganador?";
+
+
+    document.getElementById(
+      "estado"
+    ).textContent =
+      "Presiona GIRAR para comenzar";
+
+
+    document.getElementById(
+      "botonGirar"
+    ).disabled = false;
+
+  }
+
+
+  // --------------------------------
+  // GIRAR
+  // --------------------------------
+
+  async function girar() {
+
+    if (
+      girando ||
+      participantes.length === 0
+    ) {
+
+      return;
+
+    }
+
+
+    girando = true;
+
+
+    const boton =
+      document.getElementById(
+        "botonGirar"
+      );
+
+
+    boton.disabled = true;
+
+
+    document.getElementById(
+      "ganador"
+    ).style.display =
+      "none";
+
+
+    document.getElementById(
+      "estado"
+    ).textContent =
+      "🎰 ¡SORTEANDO!";
+
+
+    // Pedimos al servidor
+    // que determine el ganador.
+
+    const resultado =
+      await fetch(
+        API_URL + "?api=sortear"
+      );
+
+
+    const ganador =
+      await resultado.json();
+
+
+    if (
+      ganador.estado !== "ganador"
+    ) {
+
+      alert(
+        ganador.mensaje ||
+        "No se pudo realizar el sorteo."
+      );
+
+      girando = false;
+
+      boton.disabled = false;
+
+      return;
+
+    }
+
+
+    // Animación
+
+    let vueltas = 0;
+
+    const maxVueltas = 30;
+
+
+    const intervalo =
+      setInterval(
+        function() {
+
+          const indice =
+            Math.floor(
+              Math.random() *
+              participantes.length
+            );
+
+
+          const persona =
+            participantes[indice];
+
+
+          document.getElementById(
+            "nombre"
+          ).textContent =
+            persona.nombre +
+            " " +
+            persona.apellidos;
+
+
+          vueltas++;
+
+
+          if (
+            vueltas >= maxVueltas
+          ) {
+
+            clearInterval(
+              intervalo
+            );
+
+
+            // Mostrar ganador real
+
+            document.getElementById(
+              "nombre"
+            ).textContent =
+              ganador.nombre +
+              " " +
+              ganador.apellidos;
+
+
+            document.getElementById(
+              "estado"
+            ).textContent =
+              "🎉 ¡Tenemos ganador!";
+
+
+            document.getElementById(
+              "ganadorNombre"
+            ).textContent =
+              ganador.nombre +
+              " " +
+              ganador.apellidos;
+
+
+            document.getElementById(
+              "ganador"
+            ).style.display =
+              "block";
+
+
+            // Eliminar ganador
+            // de la lista local
+
+            participantes =
+              participantes.filter(
+                function(persona) {
+
+                  return (
+                    persona.fila !==
+                    ganador.fila
+                  );
+
+                }
+              );
+
+
+            document.getElementById(
+              "contador"
+            ).textContent =
+              participantes.length;
+
+
+            boton.disabled =
+              false;
+
+            girando =
+              false;
+
+          }
+
+
+        },
+
+        80
+
+      );
+
+  }
+
+
+  // --------------------------------
+  // Inicio
+  // --------------------------------
+
+  cargarParticipantes();
+
+
+</script>
+
+
+</body>
+
+</html>
