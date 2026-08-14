@@ -3,6 +3,8 @@
 
 <head>
 
+  <base target="_top">
+
   <meta charset="UTF-8">
 
   <meta name="viewport"
@@ -15,6 +17,7 @@
     * {
       box-sizing: border-box;
     }
+
 
     body {
 
@@ -39,7 +42,7 @@
 
       width: 90%;
 
-      max-width: 1000px;
+      max-width: 1100px;
 
       text-align: center;
 
@@ -88,7 +91,7 @@
 
       font-weight: bold;
 
-      min-height: 80px;
+      min-height: 90px;
 
       display: flex;
 
@@ -97,6 +100,8 @@
       justify-content: center;
 
       color: #222;
+
+      transition: transform 0.15s;
 
     }
 
@@ -116,7 +121,7 @@
 
       margin-top: 40px;
 
-      padding: 20px 50px;
+      padding: 20px 60px;
 
       font-size: 28px;
 
@@ -135,11 +140,31 @@
     }
 
 
+    button:hover {
+
+      transform: scale(1.05);
+
+    }
+
+
     button:disabled {
 
       opacity: 0.5;
 
       cursor: not-allowed;
+
+      transform: none;
+
+    }
+
+
+    .contador {
+
+      margin-top: 30px;
+
+      font-size: 22px;
+
+      color: #666;
 
     }
 
@@ -148,36 +173,87 @@
 
       display: none;
 
-      margin-top: 35px;
+      margin-top: 40px;
+
+      padding-top: 30px;
+
+      border-top: 2px solid #eee;
 
     }
 
 
     #ganador h2 {
 
-      font-size: 35px;
+      font-size: 38px;
 
-      margin: 0 0 10px;
+      margin: 0 0 15px;
 
     }
 
 
     #ganadorNombre {
 
-      font-size: 50px;
+      font-size: 55px;
 
       font-weight: bold;
 
     }
 
 
-    .contador {
+    .celebracion {
 
-      margin-top: 25px;
+      animation: ganador 0.8s ease;
 
-      font-size: 22px;
+    }
 
-      color: #666;
+
+    @keyframes ganador {
+
+      0% {
+
+        transform: scale(0.5);
+
+        opacity: 0;
+
+      }
+
+      70% {
+
+        transform: scale(1.15);
+
+      }
+
+      100% {
+
+        transform: scale(1);
+
+        opacity: 1;
+
+      }
+
+    }
+
+
+    .girando {
+
+      animation: pulso 0.15s infinite alternate;
+
+    }
+
+
+    @keyframes pulso {
+
+      from {
+
+        transform: scale(1);
+
+      }
+
+      to {
+
+        transform: scale(1.08);
+
+      }
 
     }
 
@@ -242,8 +318,9 @@
       <div id="ganador">
 
         <h2>
-          🏆 ¡GANADOR! 🏆
+          🏆 ¡TENEMOS GANADOR! 🏆
         </h2>
+
 
         <div id="ganadorNombre"></div>
 
@@ -256,11 +333,8 @@
   </div>
 
 
+
 <script>
-
-
-  const API_URL =
-    "https://script.google.com/macros/s/AKfycbwfP4EY0PputNtysEm91JtVX3riqeSX_pTD6lmrL_OiFsEDfO-TuMAPhi1-vorW-cI0UQ/exec";
 
 
   let participantes = [];
@@ -268,43 +342,45 @@
   let girando = false;
 
 
-  // --------------------------------
-  // Cargar participantes
-  // --------------------------------
 
-  async function cargarParticipantes() {
+  // ==========================================
+  // CARGAR PARTICIPANTES
+  // ==========================================
 
-    try {
+  function cargarParticipantes() {
 
-      const respuesta =
-        await fetch(
-          API_URL + "?api=ruleta"
-        );
+    google.script.run
 
-      participantes =
-        await respuesta.json();
+      .withSuccessHandler(
+        recibirParticipantes
+      )
 
+      .withFailureHandler(
+        mostrarError
+      )
 
-      actualizarInterfaz();
-
-
-    } catch (error) {
-
-      console.error(error);
-
-      document.getElementById(
-        "nombre"
-      ).textContent =
-        "❌ Error al cargar participantes";
-
-    }
+      .obtenerParticipantesRuleta();
 
   }
 
 
-  // --------------------------------
-  // Actualizar interfaz
-  // --------------------------------
+
+  function recibirParticipantes(
+    datos
+  ) {
+
+    participantes =
+      datos || [];
+
+    actualizarInterfaz();
+
+  }
+
+
+
+  // ==========================================
+  // ACTUALIZAR INTERFAZ
+  // ==========================================
 
   function actualizarInterfaz() {
 
@@ -323,14 +399,17 @@
       ).textContent =
         "No hay participantes";
 
+
       document.getElementById(
         "estado"
       ).textContent =
-        "Todos han ganado o todavía no han ingresado.";
+        "No hay participantes disponibles.";
+
 
       document.getElementById(
         "botonGirar"
       ).disabled = true;
+
 
       return;
 
@@ -356,11 +435,12 @@
   }
 
 
-  // --------------------------------
-  // GIRAR
-  // --------------------------------
 
-  async function girar() {
+  // ==========================================
+  // GIRAR
+  // ==========================================
+
+  function girar() {
 
     if (
       girando ||
@@ -396,47 +476,84 @@
       "🎰 ¡SORTEANDO!";
 
 
-    // Pedimos al servidor
-    // que determine el ganador.
-
-    const resultado =
-      await fetch(
-        API_URL + "?api=sortear"
+    const nombre =
+      document.getElementById(
+        "nombre"
       );
 
 
-    const ganador =
-      await resultado.json();
+    nombre.classList.add(
+      "girando"
+    );
 
+
+    // --------------------------------------
+    // Pedimos al servidor el ganador REAL
+    // --------------------------------------
+
+    google.script.run
+
+      .withSuccessHandler(
+        iniciarAnimacion
+      )
+
+      .withFailureHandler(
+        mostrarError
+      )
+
+      .sortearGanador();
+
+  }
+
+
+
+  // ==========================================
+  // ANIMACIÓN
+  // ==========================================
+
+  function iniciarAnimacion(
+    resultado
+  ) {
 
     if (
-      ganador.estado !== "ganador"
+      !resultado ||
+      resultado.estado !== "ganador"
     ) {
-
-      alert(
-        ganador.mensaje ||
-        "No se pudo realizar el sorteo."
-      );
 
       girando = false;
 
-      boton.disabled = false;
+      document.getElementById(
+        "botonGirar"
+      ).disabled = false;
+
+
+      document.getElementById(
+        "estado"
+      ).textContent =
+        resultado.mensaje ||
+        "No se pudo realizar el sorteo.";
+
 
       return;
 
     }
 
 
-    // Animación
+    const nombre =
+      document.getElementById(
+        "nombre"
+      );
+
 
     let vueltas = 0;
 
-    const maxVueltas = 30;
+    const maxVueltas = 35;
 
 
     const intervalo =
       setInterval(
         function() {
+
 
           const indice =
             Math.floor(
@@ -449,9 +566,7 @@
             participantes[indice];
 
 
-          document.getElementById(
-            "nombre"
-          ).textContent =
+          nombre.textContent =
             persona.nombre +
             " " +
             persona.apellidos;
@@ -469,63 +584,9 @@
             );
 
 
-            // Mostrar ganador real
-
-            document.getElementById(
-              "nombre"
-            ).textContent =
-              ganador.nombre +
-              " " +
-              ganador.apellidos;
-
-
-            document.getElementById(
-              "estado"
-            ).textContent =
-              "🎉 ¡Tenemos ganador!";
-
-
-            document.getElementById(
-              "ganadorNombre"
-            ).textContent =
-              ganador.nombre +
-              " " +
-              ganador.apellidos;
-
-
-            document.getElementById(
-              "ganador"
-            ).style.display =
-              "block";
-
-
-            // Eliminar ganador
-            // de la lista local
-
-            participantes =
-              participantes.filter(
-                function(persona) {
-
-                  return (
-                    persona.fila !==
-                    ganador.fila
-                  );
-
-                }
-              );
-
-
-            document.getElementById(
-              "contador"
-            ).textContent =
-              participantes.length;
-
-
-            boton.disabled =
-              false;
-
-            girando =
-              false;
+            mostrarGanador(
+              resultado
+            );
 
           }
 
@@ -539,9 +600,126 @@
   }
 
 
-  // --------------------------------
-  // Inicio
-  // --------------------------------
+
+  // ==========================================
+  // MOSTRAR GANADOR
+  // ==========================================
+
+  function mostrarGanador(
+    ganador
+  ) {
+
+    const nombre =
+      document.getElementById(
+        "nombre"
+      );
+
+
+    nombre.classList.remove(
+      "girando"
+    );
+
+
+    nombre.textContent =
+      ganador.nombre +
+      " " +
+      ganador.apellidos;
+
+
+    nombre.classList.add(
+      "celebracion"
+    );
+
+
+    document.getElementById(
+      "estado"
+    ).textContent =
+      "🎉 ¡Felicidades!";
+
+
+    document.getElementById(
+      "ganadorNombre"
+    ).textContent =
+      ganador.nombre +
+      " " +
+      ganador.apellidos;
+
+
+    document.getElementById(
+      "ganador"
+    ).style.display =
+      "block";
+
+
+    // --------------------------------------
+    // Eliminarlo de la lista local
+    // --------------------------------------
+
+    participantes =
+      participantes.filter(
+        function(persona) {
+
+          return (
+            persona.fila !==
+            ganador.fila
+          );
+
+        }
+      );
+
+
+    document.getElementById(
+      "contador"
+    ).textContent =
+      participantes.length;
+
+
+    girando = false;
+
+
+    document.getElementById(
+      "botonGirar"
+    ).disabled =
+      participantes.length === 0;
+
+  }
+
+
+
+  // ==========================================
+  // ERROR
+  // ==========================================
+
+  function mostrarError(
+    error
+  ) {
+
+    console.error(error);
+
+
+    document.getElementById(
+      "nombre"
+    ).textContent =
+      "❌ Error";
+
+
+    document.getElementById(
+      "estado"
+    ).textContent =
+      "No se pudo cargar la información.";
+
+
+    document.getElementById(
+      "botonGirar"
+    ).disabled = true;
+
+  }
+
+
+
+  // ==========================================
+  // INICIO
+  // ==========================================
 
   cargarParticipantes();
 
